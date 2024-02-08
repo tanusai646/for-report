@@ -1,0 +1,486 @@
+\documentclass[dvipdfmx]{jsarticle}
+
+\usepackage{listings, jlisting, color}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{pdfpages}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{multirow}
+\usepackage{color}
+\usepackage{ulem}
+\usepackage{here}
+
+
+\newcommand{\Add}[1]{\textcolor{red}{#1}}
+\newcommand{\Erase}[1]{\textcolor{red}{\sout{\textcolor{black}{#1}}}}
+\newcommand{\ctext}[1]{\raise0.2ex\hbox{\textcircled{\scriptsize{#1}}}}
+
+\lstset{
+  basicstyle={\ttfamily},
+  identifierstyle={\small},
+  commentstyle={\smallitshape},
+  keywordstyle={\small\bfseries},
+  ndkeywordstyle={\small},
+  stringstyle={\small\ttfamily},
+  frame={tb},
+  breaklines=true,
+  columns=[l]{fullflexible},
+  numbers=left,
+  xrightmargin=0zw,
+  xleftmargin=3zw,
+  numberstyle={\scriptsize},
+  stepnumber=1,
+  numbersep=1zw,
+  lineskip=-0.5ex
+}
+
+\makeatletter % プリアンブルで定義開始
+
+% 表示文字列を"図"から"Figure”へ，"表"から"Table”へ
+\renewcommand{\figurename}{図}
+\renewcommand{\tablename}{表}
+
+% 図，表番号を"<章番号>.<図番号>” ，"<章番号>.<表番号>” へ
+\renewcommand{\thefigure}{\thesection-\arabic{figure}}
+\renewcommand{\thetable}{\thesection-\arabic{table}}
+
+% 章が進むごとに図番号をリセットする
+\@addtoreset{figure}{section}
+\@addtoreset{table}{section}
+
+\makeatother % プリアンブルで定義終了
+
+\begin{document}
+
+\title{テーマ2 \\組み込みシステム}
+\author{222C1021 今村優希}
+\maketitle
+\newpage
+
+\section{目的}
+今回の実験は、組み込みシステムの概略を学ぶ目的がある。
+実際に組み込みシステムで用いられる超小型コンピュータである"Raspberry Pi"を用いて行う。
+pythonでプログラムを記述し、プログラムをRaspberry Piに送信し、実行することで組み込みシステムについて学習する。
+加えてデバイスドライバを作成し、OSに関することも学ぶ。
+
+\section{実験方法}
+\subsection{実験の準備}
+\begin{itemize}
+  \item[1] Raspberry Piの実機に電源を接続した
+  \item[2] ノートPCを実験用の無線LANに接続した
+  \item[3] Windows PowerShellを起動した
+  \item[4] PowerShellで以下のコマンドを実行した
+  \begin{center}
+    ssh pi@rpi13.local rpi/init
+  \end{center}
+  Initializedと表示され初期化ができた。
+\end{itemize}
+
+\subsection{課題1 LEDを周期的に点滅させるプログラムを作成}
+\subsubsection{step:1 シミュレーターで開発}
+\begin{itemize}
+  \item[1] ブラウザでいかに示すWokwiのサイトにアクセスし、アカウントの設定を行った。\\
+  https://wokwi.com/
+  \item[2] 右側のアイコンをクリックして「My Projects」を選択することで新しいプロジェクトの作成ができる。\\
+  今回使用したプロジェクトは"MicroPython on Raspberry Pi Pico"である。
+  \item[3] 回路の作成を行った。課題1ではLEDと抵抗、そして配線を用いた回路を作成した。\\
+  LEDのアノードをGPIN(pico:GP17)に接続、カソードはGND(pico:GND.5)に接続した。また、抵抗は330$\Omega$に設定した。
+  これらアイテムを配線で接続して回路は完成させた。
+\end{itemize} 
+
+\subsubsection{step:2 プログラムの作成}
+\begin{itemize}
+  \item[1] 左側の画面でプログラムを作成した。"main.py"の部分にPythonで記述をする。
+  \item[2] プログラムが完成したらシミュレーター画面上部の三角マークをおしてシミュレーションを行った。
+  \item[3] シミュレータで正しく動作したら作成したプログラム"main.py"をダウンロードした。
+\end{itemize}
+
+\subsubsection{step:3 実機で実行}
+\begin{itemize}
+  \item[1] WindowsPowerShellを使って実行を行う。
+  先程ダウンロードした"main.py"があるフォルダに移動し、実験用LANに接続する。
+  \item[2] "main.py"を以下のコマンドを用いて実機にコピーを行う。
+  \begin{center}
+    scp main.py pi@rpi13.local:
+  \end{center}
+  \item[3] "main.py"を以下のコマンドを用いて実機で実行し、LEDの動作を確認した。
+  \begin{center}
+    ssh -t pi@rpi13.local python3 main.py
+  \end{center}
+  確認が終わったらCtrl+Cを押して実行を終了させた。
+\end{itemize}
+
+\subsection{課題2 タクトスイッチを用いたLEDの制御}
+\subsubsection{step1: 回路、プログラムの作成}
+\begin{itemize}
+  \item[1] 新しいプロジェクトを作り、タクトスイッチ、LED、抵抗を用意した。
+  \item[2] タクトスイッチに対して、電源ピン(pico:3V3)、GPIN(pico:GP22)、GND(pico:GND.7)に配線を行う。
+  スイッチとGNDの間に10$k\Omega$の抵抗を挿入した。
+  LEDの接続は課題1と同様にした。
+  \item[3] 課題1と同様にプログラムの作成を行った。
+  \item[4] プログラムの作成ができたらシミュレーターで実行してみた。
+\end{itemize}
+
+\subsubsection{step2: チャタリング対策}
+\begin{itemize}
+  \item[1] チャタリング対策のために割り込みの処理を行うためのプログラムを追加した。
+  \item[2] プログラムが作成できたらシミュレーターで実行してみた。
+  \item[3] 課題1と同様に実機でも動作させた。 
+\end{itemize}
+
+\subsection{課題3 デバイスドライバの作成}
+\subsubsection{step1: ドライバの雛形の実行}
+\begin{itemize}
+  \item[1] WindowsPowerShellを起動し、以下のコマンドで実機にログインした。\\
+  ssh pi@rpi13.local\\
+  driveディレクトリに移動し、以下のコマンドでコンパイルし、デバイスドライバをOSに組み込んだ\\
+  make\\
+  sudo insmod sonic.ko
+  \item[2] デバイスドライバにアクセスを行う。catコマンドでデバイスファイルを読み出す。
+  この際、以下のコマンドを用いて出力を確認した。\\
+  cat /sys/kernel/soic\\
+  確認ができたら以下のコマンドでデバイスドライバをOSから取り外した。\\
+  sudo rmmod sonic\\
+\end{itemize}
+
+\subsubsection{step2: 超音波センサの駆動}
+\begin{itemize}
+  \item[1] 回路は作成されていたので何も触らなかった。
+  \item[2] Moodleからデバイスドライバの雛形(sonic.c)をダウンロードし、sonic.cを書き換える。
+  \item[3] プログラムが作成されたら以下のコマンドを用いて実機にコピーする。\\
+  scp sonic.c pi@rpi13.local:driver
+  \item[4] step1と同様にプログラムの実行を行う。
+\end{itemize}
+
+\subsection{課題4 オプション}\label{sec:2}
+\begin{itemize}
+  \item[1] 回路の作成を行う。Simulationタブで必要な部品"SSD1306 OLED display"を用意。
+  displayを90度回転させるために"diagram.json"に以下のように"rotate"を追加する。
+
+  \item[2] 以下のように接続させた。\\
+  GND端子→GND(pico:GND.x)\\
+  VCC端子→電源(pico:3V3)\\
+  SCL端子→クロック用(pico.GP1)\\
+  SDA端子→データ用(pico.GP0)\\
+  \item[3] プログラムの作成を行った。Moodleから"ssd1306.py"をダウンロードし、Workiにアップロードする。
+  その後、I2C通信に用いるI2Cオブジェクトを作成した。
+  for文などを組み合わせて自分が好きな図形を描けるようにプログラムを作成し、シミュレータを実行させた。
+\end{itemize}
+
+\section{実験結果}
+\subsection{課題1 課題1 LEDを周期的に点滅させるプログラムを作成}
+\subsubsection{プログラム}
+作成したプログラムはソースコード1である。\\
+\begin{lstlisting}[caption={main.py}]
+from machine import Pin
+from utime import sleep
+print("Hello, Pi PicoW!")
+
+led = Pin(17, Pin.OUT)
+
+while True:
+  led.value(1)
+  sleep(0.5)
+  led.value(0)
+  sleep(0.5)
+\end{lstlisting}
+\vspace*{3mm}
+プログラムの説明を行うと、1行目の\textgt{from machine import Pin}にてmachineモジュールの中野Pinクラスを使うことを定義している。
+5行目の\textgt{led = Pin(17, Pin.OUT)}ではPinオブジェクトの作成を行っている。
+
+8、10行目の\textgt{led.value(値)}でPinオブジェクトに対応付けられたGPIOピンの状態を変更している。
+第1引数ではGPIOピンに設定する状態を示しており、1(=HIGH)ではLEDが点灯し、0(=LOW)ではLEDが消灯する。
+また、7行目以降のwhile文ではLEDが接続されたGPIOピンの状態をHIGHにしたり、LOWにしたりを繰り返す。
+そのため、9、11行目のように\textgt{sleep(0.5)}を用いてその状態を0.5秒間維持するよう設定している。
+この関数を用いるために2行目の\textgt{from utime import sleep}を使用している。
+
+\subsubsection{作成した回路図}
+シミュレーター上で作成した回路図は\ref*{fig:3-1}である。
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics*[scale=0.6]{graphic/3-1.png}
+  \end{center}
+  \caption[]{課題1の回路図}
+  \label{fig:3-1}
+\end{figure}
+LEDのアノードは抵抗を経由してpico:GP17に接続している。
+また、カソードはpico:GND.5に接続している。
+
+\subsubsection{実行結果}
+実行した結果、0.5秒ごとにLEDが点灯、消灯を繰り返した。
+図\ref*{fig:3-2}はシミュレータ上でLEDが点灯したときの画像である。
+\begin{figure}
+  \begin{center}
+    \includegraphics[scale=0.6]{graphic/3-2.png}
+  \end{center}
+  \caption{課題1の実行結果}
+  \label{fig:3-2}
+\end{figure}
+
+\subsubsection{考察}
+今回の結果より、LEDの点灯、消灯はすべて\texttt{led.value(値)}で行われていることがわかった。
+また、sleep関数の値を小さくしていけば行くほど人間の目ではわからないくらい点灯消灯を繰り返しており、
+常時点灯しているかのように見られることがわかった。
+
+\subsection{課題2 タクトスイッチを用いたLEDの制御}
+\subsubsection{プログラム}
+今回作成したプログラムはソースコード2である。
+\begin{lstlisting}[caption={main.py}]
+from machine import Pin
+from utime import sleep
+from utime import ticks_ms
+print("Hello, Pi Pico W!")
+
+led = Pin(17, Pin.OUT|Pin.IN)
+switch = Pin(22, Pin.IN)
+
+first = 0
+
+def handler(pin):
+    global first
+
+    now = ticks_ms()
+    if now - first < 500:
+        return
+    first = now
+
+    if led.value() == 0:
+        led.value(1)
+    else:
+        led.value(0)
+
+    sleep(0.1)
+    if switch.value() == 1:
+        return 
+
+switch.irq(handler, Pin.IRQ_RISING)
+
+while True:
+  sleep(1)
+\end{lstlisting}
+1行目から3行めはこのプログラムを動かすためのクラスを追加している。
+5、6行目ではLED及びタクトスイッチに接続されたGPIOピンを制御するために、Pinオブジェクトを作成している。
+
+28行目の\texttt{switch.irq(handler, Pin.IRQ\_RISING)}でタクトスイッチによる割り込みの処理を行っている。
+ボタンが押されたときに割り込みが発生し、関数が自動的に呼ばれるようになっている。第1引数には割り込み発生時に呼ばれる関数が定義してあり、
+今回は11行目の\texttt{def handler(pin)}の関数が呼ばれる。
+そして、第2引数では関数が呼ばれるタイミングを指定している。
+\texttt{Pin.IRQ\_RISING}なので、GPIOピンの電圧がLOW→HIGHになったときに呼び出すよう設定している。
+
+11行目の\texttt{def}以降では割り込み処理を行っている。12行目から17行目はチャタリング対策を行うために入れている。
+タクトスイッチを押した場合、電気的に安定するまでLOWとHIGHを繰り返すため、15行目の\texttt{if now - first < 500:}
+を用いて最初の割り込みが発生したあと500ミリ秒は割り込みを無視するようにしている。
+そのために9行目、14行目のコードを用いている。
+
+そして最初の割り込みが適切に処理された場合19行目から23行目で、LEDが消灯していたら点灯させ、点灯していたら消灯するようなコードを書いている。
+関数の最後の方、26行目に\texttt{if switch.value() == 1:}としているのはタクトスイッチがずっと押された状態のときの処理を行うためである。
+
+最後に30行目の\\\texttt{while True:\\sleep(1)}\\
+を用いることで割り込み待状態を維持し、プログラムが終了しないようにしている。
+
+\subsubsection{作成した回路}
+シミュレーター上で作成した回路は、\ref*{fig:3-3}である。
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[scale=0.8]{graphic/3-3.png}
+  \end{center}
+  \caption{課題2の回路}
+  \label{fig:3-3}
+\end{figure}
+LEDの接続方法は課題1と同じである。
+タクトスイッチは、左上とpico:3V3を接続、左下にpico:GP22と10$k\Omega$に設定させた抵抗を経由してpico:GND.7に接続させた。
+
+\subsubsection{実行結果}
+シミュレータでボタンを押したあとの状態を図\ref*{fig:3-4}で示す。
+ボタンを押すとライトが点灯し、短時間での連続押しをしてもLEDは点灯、消灯をすることなく、点灯した状態を維持していた。
+ある程度時間が経ってからボタンを押すとLEDが消灯した。
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[scale=0.8]{graphic/3-4.png}
+  \end{center}
+  \caption{課題2に実行結果}
+  \label{fig:3-4}
+\end{figure}
+
+\subsubsection{考察}
+チャタリング対策を適切に行うことで、機械を正しく制御できることがわかった。
+また、タクトスイッチを押した瞬間は電気的に安定でないことが分かった。
+その原因として、RaspberryPiのPinはディジタル信号しか扱えないからだと考えた。
+タクトスイッチを押した瞬間や離した瞬間に電圧の変化等が起きた可能性があったのではないかと考えた。
+
+\subsection{課題3 デバイスドライバの作成}
+\subsubsection{プログラム}
+今回作成したプログラムはソースコード3である。書き換えを行ったのはsonic\_show関数及びsonic\_init関数である。
+まず、sonic\_init関数について説明すると、後半の52、53行目にてGPIOピンのモードを設定している。
+\texttt{gpio\_direction\_output(GPIO\_TRIG, LOW);}でトリガー端子が接続されたGPIOピンを出力モードに設定し、初期値をLOWにしている。
+また、\texttt{gpio\_direction\_input(GPIO\_ECHO);}でエコー端子が接続されたGPIOピンを入力モードに設定している。
+
+次にsonic\_show関数について、まず21行目から23行目はトリガー端子をHIGHにしたあと10マイクロ秒待ってLOWにするプログラムである。
+さらに25行目でエコー端子がHIGHになるまで待ち、その時間を\texttt{ktime\_get\_real\_ts64(\&start);}にて保存している。
+更に28行目でエコー端子がLOWになるまで待ち、その時間を\texttt{ktime\_get\_real\_ts64(\&end);}にて保存している。
+31行目の\texttt{diff = timespec64\_sub(end, start);}でHIGHとLOWになる時間の差を、timespec64構造体のdiffに保存を行っている。
+その後、32行目の\texttt{ns = timespec64\_to\_ns(\&diff);}でlong型の変数に変更したものをnsに代入している。
+34行目から36行目で時間(単位:ナノ秒)から距離(単位:mm)に変更を行っている。
+最後に37行目の\texttt{return sprintf(buf, "\%lu$\backslash$n", distance);}で距離を文字列に変化させて配列bufに格納している。
+
+
+\newpage
+
+\begin{lstlisting}[caption={sonic.c}]
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/sysfs.h>
+#include <linux/gpio.h>
+#include <linux/delay.h>
+#include <linux/time.h>
+
+#define LOW 0
+#define HIGH 1
+
+#define GPIO_TRIG 23
+#define GPIO_ECHO 24
+
+
+static ssize_t sonic_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    struct timespec64 start, end, diff;
+    unsigned long ns;
+    unsigned long distance;
+
+    gpio_set_value(GPIO_TRIG, HIGH);
+    udelay(10);
+    gpio_set_value(GPIO_TRIG, LOW);
+
+    while(gpio_get_value(GPIO_ECHO) == LOW)
+        ktime_get_real_ts64(&start);
+
+    while(gpio_get_value(GPIO_ECHO) == HIGH)
+        ktime_get_real_ts64(&end);
+
+    diff = timespec64_sub(end, start);
+    ns = timespec64_to_ns(&diff);
+    
+    distance = ns * 343;
+    distance = distance / 2;
+    distance = distance / 1000000;
+    return sprintf(buf, "%lu\n", distance);
+}
+
+static struct kobj_attribute sonic_attr =
+    __ATTR(sonic, 0444, sonic_show, NULL);
+
+static int __init sonic_init(void)
+{
+    int err;    
+    printk("sonic init\n");
+
+    err = sysfs_create_file(kernel_kobj, &sonic_attr.attr);
+    if (err)
+        return err;
+
+    gpio_direction_output(GPIO_TRIG, LOW);
+    gpio_direction_input(GPIO_ECHO);
+
+    return 0;
+}
+
+static void __exit sonic_exit(void)
+{
+    printk("sonic exit\n");
+
+    sysfs_remove_file(kernel_kobj, &sonic_attr.attr);
+}
+
+module_init(sonic_init);
+module_exit(sonic_exit);
+
+MODULE_LICENSE("GPL");
+
+\end{lstlisting}
+\subsubsection{作成した回路}
+作成した回路は\ref*{fig:3-5}である。
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[scale=0.08]{graphic/3-5.jpg}
+  \end{center}
+  \caption[]{課題3の回路}
+  \label{fig:3-5}
+\end{figure}
+
+\subsubsection{実行結果}
+図\ref*{fig:3-6}の状況でプログラムの実行を行った。センサと壁の距離が約110mmになっている。
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[scale=0.08]{graphic/3-6.jpg}
+  \end{center}
+  \caption[]{課題3の実行状況}
+  \label{fig:3-6}
+\end{figure}
+プログラムを実行すると図\ref*{fig:3-7}のような出力を得られた。
+\texttt{\$ cat /sys/kernel/sonic}というコマンドを実行すると、111と出力されたためそれなりに良い結果が得られたことが分かる。
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics*[scale=0.8]{graphic/3-7.png}
+  \end{center}
+  \caption{課題3の実行結果}
+  \label{fig:3-7}
+\end{figure}
+\subsubsection{考察}
+
+
+\subsection{課題4 オプション}
+\subsubsection{プログラム}
+作成したプログラムはソースコード4である。
+\begin{lstlisting}{caption={main.py}}
+from machine import SoftI2C, Pin
+from ssd1306 import SSD1306_I2C
+
+i2c = SoftI2C(scl=Pin(0), sda=Pin(1))
+display = SSD1306_I2C(128, 64, i2c)
+
+while True:
+  display.fill(0)
+
+    for i in range(100):
+      for j in range(7):
+          display.rect(1+6*j, 1+4*j, 127-12*j, 63-8*j)
+      display.show()
+\end{lstlisting}
+プログラムの内容はかなりシンプルに記述を行った。for文をiは100まで、その内側にfor文を入れてその中で四角を表示させるコードを入れている。
+for文を入れた理由は、このプログラムの仕様で表示させたい図形がある程度残るようにしたかったからである。
+\texttt{display.rect(1+6*j, 1+4*j, 127-12*j, 63-8*j)}で四角形をjが増えるたびに内側に表示をさせている。
+
+\subsubsection{作成した回路}
+作成した回路は図\ref*{fig:3-8}である。
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[scale=0.8]{graphic/3-8.png}
+  \end{center}
+  \caption[]{実験4の回路}
+  \label{fig:3-8}
+\end{figure}
+
+配線はページ\pageref*{sec:2}の実験方法を参考にした。
+
+\subsubsection{実行結果}
+今回、作成目標の図は実験指導書の61ページ左側の図である。
+シミュレーションで実行した結果、図\ref*{fig:3-9}のように似た図を表示させることに成功した。
+四角形は7本出ると新しいものは出力されず、i=100になるまで表示されたままであった。
+\begin{figure}[H]
+  \begin{center}
+    \includegraphics[scale=0.7]{graphic/3-9.png}
+  \end{center}
+  \caption[]{課題4の結果}
+  \label{fig:3-9}
+\end{figure}
+
+\subsubsection{考察}
+今回の内容では、一度表示させたらfor文が終わるまで消えずに残ることが分かった。
+その理由は分からなかったが、その仕様のお陰で今回目的の図形を表示させることができた。
+
+\section{まとめ}
+今回の実験では組み込みシステムの基本的な内容を学ぶことができたと考えている。
+課題1及び課題2では、開発用PC(今回はWindowsPC)で作成したプログラムを、RaspberryPiに送信し実行するという実験を行った。
+課題3では、開発用PCを用いてデバイスドライバを作成し、デバイスの制御を行い、距離の測定を行った。
+これらの結果から、RaspberryPiの素晴らしさや、組み込みシステムの開発の流れを大まかに知ることができた。
+\end{document}
